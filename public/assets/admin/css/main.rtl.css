@@ -1,0 +1,22 @@
+@import url('https://fonts.googleapis.com/css2?family=IBM+Plex+Sans+Arabic:wght@100;200;300;400;500;600;700&display=swap');
+
+
+h1, h2, h3, h4, h5, h6, button, label, input, div, span, a {
+   font-family: "IBM Plex Sans Arabic", serif;
+}
+
+input[type=checkbox] + label {
+   display: inline-block;
+   vertical-align: middle;
+   cursor: pointer;
+   margin-right: 4px;
+}
+
+.fa-user,
+.fa-clock {
+   margin-left: 5px;
+}
+
+.blog-post-date {
+   margin-left: 10px;
+ }

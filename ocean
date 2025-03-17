@@ -1,0 +1,381 @@
+<?php
+
+   /**
+   * Define ANSI escape codes for styling console output
+   */
+   define('INFO', "\033[1;4;44m");
+   define('ERROR', "\033[1;97;41m");
+   define('DONE', "\033[0;32m");
+   define('RESET', "\033[0m");
+
+
+   if (!function_exists('base_path')) {
+    /**
+     * Get the base path of the application.
+     *
+     * @param string $path Relative path to append.
+     * @return string      Absolute base path.
+     */
+      function base_path(string $path): string {
+
+         return getcwd()."/$path";
+      }
+   }
+
+
+   if (!function_exists('public_path')) {
+    /**
+     * Get the public path of the application.
+     *
+     * @param string $path Relative path to append.
+     * @return string      Absolute public path.
+     */
+      function public_path(string $path): string {
+
+         return getcwd()."/public/$path";
+      }
+   }
+
+
+   if (!function_exists('logs')) {
+    /**
+     * Simulate a migration process with formatted output.
+     *
+     * @param string $table Name of the table being migrated.
+     * @return void
+     */
+      function logs(string $table) {
+         $execution_time = rand(15, 200);
+         $migration_name = "create_".$table."_table";
+         $dots = str_repeat('.', max(0, 80 - strlen($migration_name) - strlen("$execution_time ms DONE")));
+         echo " $migration_name $dots $execution_time ms " . DONE . "DONE" . RESET . "\n";
+      }
+   }
+
+
+   if (!function_exists('start')) {
+    /**
+     * Start a PHP development server.
+     *
+     * @return void
+     */
+      function start() {
+         $host = 'localhost';
+         $port = 8000;
+         $public = __DIR__.'/public';
+   
+         echo " Starting server at http://{$host}:{$port}\n";
+         echo " Press Ctrl+C to stop the server.\n";
+
+         passthru("php -S {$host}:{$port} -t {$public}");
+      }
+   }
+
+
+   if (!function_exists('clear_cache')) {
+    /**
+     * Clear cached view files.
+     *
+     * @param array $options Additional options (not used).
+     * @return void
+     */
+      function clear_cache(array $options) {
+         $path = 'storage/views';
+         $files = glob($path.'/*');
+         
+         foreach($files as $file) {
+            if (file_exists($file)) {
+               unlink($file);
+            }
+         }
+   
+         echo " ".INFO." INFO ".RESET." "."Cache cleared successful.\n\n";
+      }
+   }
+
+
+   if (!function_exists('storage_link')) {
+    /**
+     * Create a symbolic link between directories.
+     *
+     * @param array $options Contains source and target paths.
+     * @return void
+     */
+      function storage_link(array $options) {
+         if (count($options) == 3) {
+            if (is_dir(base_path($options[2])) && !is_dir(public_path($options[1]))) {
+               if (symlink(base_path($options[2]), public_path($options[1]))) {
+                  echo "\n ".INFO." INFO ".RESET." "."The [".public_path($options[1])."] link has been connected to [".base_path($options[2])."].\n";
+               }
+            } elseif (is_dir(public_path($options[1]))) {
+               echo "\n ".ERROR." ERROR ".RESET." ".public_path($options[1])." already exists.\n";
+            } else {
+               echo "\n ".ERROR." ERROR ".RESET." ".base_path($options[2])." does not exists.\n";
+            }
+         } else {
+            echo "\n ".ERROR." WARNING ".RESET." "."Please enter source and target paths.\n";
+         }
+      }
+   }
+
+
+   if (!function_exists('run_migrate')) {
+    /**
+     * Run or refresh database migrations.
+     *
+     * @param array $tables List of tables to migrate.
+     * @param bool $refresh Whether to refresh (rollback) migrations.
+     * @return mixed
+     */
+      function run_migrate(array $tables, bool $refresh=false) {
+         $connect = include base_path('config/connect.php');
+         $database = $connect['database'];
+
+         if ($refresh) {
+            echo " ".INFO." INFO ".RESET." "."Rolling back migrations.\n\n";
+
+            foreach (array_reverse($tables) as $table) {
+               $sql = "DROP TABLE IF EXISTS `$table`";
+               $stmt = $database->prepare($sql);
+
+               if ($stmt->execute()) {
+                  logs($table);
+               }
+            }
+
+            echo "\n";
+         }
+
+         echo " ".INFO." INFO ".RESET." "."Running migrations.\n\n";
+         foreach ($tables as $table) {
+            $file = base_path("database/migrations/$table.php");
+
+            if (file_exists($file)) {
+               include $file;
+            } else {
+               return "`$table` does not exists.";
+            }
+         }
+      }
+   }
+
+
+   if (!function_exists('migrate')) {
+    /**
+     * Migrate and running database tables.
+     *
+     * @return void
+     */
+      function migrate() {
+         run_migrate([
+            'users',
+            'tags',
+            'categories',
+            'posts',
+            'post_tag'
+         ]);
+      }
+   }
+
+
+   if (!function_exists('migrate_refresh')) {
+    /**
+     * Refresh migrations by rolling back and re-running.
+     *
+     * @return void
+     */
+      function migrate_refresh() {
+         run_migrate([
+            'users',
+            'tags',
+            'categories',
+            'posts',
+            'post_tag'
+         ], true);
+      }
+   }
+
+
+   if (!function_exists('list_of_commands')) {
+    /**
+     * Display a list of available commands.
+     *
+     * @param array $options Additional options (not used).
+     * @return void
+     */
+      function list_of_commands(array $options) {
+         echo "Available commands:\n";
+         echo "  start             - Starts a PHP development server at http://localhost:8000.\n";
+         echo "  cache:clear        - Clears cached view files from the 'storage/views' directory.\n";
+         echo "  migrate           - Runs database migrations and creates necessary tables.\n";
+         echo "  migrate:refresh   - Rolls back and re-runs all migrations to reset the database.\n";
+         echo "  storage:link      - Creates a symbolic link between a target and source directory.\n";
+         echo "  list              - Displays a list of all available commands.\n";
+         echo "  help [command]    - Displays usage details for a specific command.\n";
+      }
+   }
+
+
+   if (!function_exists('help_usage')) {
+    /**
+     * Display help details for a specific command.
+     *
+     * @param array $options Command name and additional options.
+     * @return void
+     */
+      function help_usage(array $options) {
+         global $commands;
+   
+         if (count($options) < 2) {
+            echo "OceanPHP Project developed by Rayan (".INFO."sudo38/OceanPHP".RESET.")\n";
+            echo "Usage: php ocean help <command> [options]\n";
+            echo "Available commands:\n";
+   
+            foreach (array_keys($commands) as $name) {
+               echo "  $name\n";
+            }
+         } else {
+            $command = $options[1];
+
+            if (isset($commands[$command])) {
+               echo "Usage for '$command':\n";
+
+               switch ($command) {
+                  case 'start':
+                     echo "  start\n";
+                     echo "    Starts a local development server.\n";
+                     echo "    Example:\n";
+                     echo "      php ocean start\n";
+                     break;
+   
+                  case 'cache:clear':
+                     echo "  view:clear\n";
+                     echo "    Clears compiled view files from the storage/views directory.\n";
+                     echo "    Example:\n";
+                     echo "      php ocean view:clear\n";
+                     break;
+   
+                  case 'migrate':
+                     echo "  migrate\n";
+                     echo "    Runs database migrations to create tables.\n";
+                     echo "    Example:\n";
+                     echo "      php ocean migrate\n";
+                     break;
+   
+                  case 'migrate:refresh':
+                     echo "  migrate:refresh\n";
+                     echo "    Rolls back and re-runs all migrations to reset the database.\n";
+                     echo "    Example:\n";
+                     echo "      php ocean migrate:refresh\n";
+                     break;
+   
+                  case 'storage:link':
+                     echo "  storage:link <public_path> <base_path>\n";
+                     echo "    Create a symbolic link between the storage uploads and any public directory.\n";
+                     echo "    Parameters:\n";
+                     echo "      <public_path> - The public directory to link to.\n";
+                     echo "      <base_path>   - The storage directory to link from.\n";
+                     echo "    Example:\n";
+                     echo "      php ocean storage:link storage storage/uploads\n";
+                     break;
+   
+                  case 'list':
+                     echo "  list\n";
+                     echo "    Lists all available commands.\n";
+                     echo "    Example:\n";
+                     echo "      php ocean list\n";
+                     break;
+   
+                  case 'help':
+                     echo "  help <command>\n";
+                     echo "    Displays usage instructions for a specific command.\n";
+                     echo "    Parameters:\n";
+                     echo "      <command> - The command you need help with.\n";
+                     echo "    Example:\n";
+                     echo "      php ocean help migrate\n";
+                     break;
+   
+                  default:
+                     echo "No detailed help available for '$command'.\n";
+               }
+            } else {
+               echo "Command '$command' not found.\n";
+            }
+         }
+      }
+   }
+
+
+   if (!function_exists('parse_options')) {
+    /**
+     * Parse CLI arguments into options and commands.
+     *
+     * @param array $args Arguments passed from the command line.
+     * @return array      Parsed options.
+     */
+      function parse_options(array $args): array {
+         $options = [];
+         unset($args[0]);
+   
+         foreach ($args as $arg) {
+            if (strpos($arg, '--') === 0) {
+               $option = explode('=', substr($arg, 2), 2);
+               $options[$option[0]] = $option[1] ?? true;
+            } else {
+               $options[] = $arg;
+            }
+         }
+   
+         return $options;
+      }
+   }
+
+
+   if (!function_exists('handle')) {
+    /**
+     * Execute the appropriate command based on CLI input.
+     *
+     * @param array $args     Command line arguments.
+     * @param array $commands List of available commands.
+     * @return void
+     */
+      function handle(array $args, array $commands) {
+         if (count($args) < 2) {
+            return;
+         }
+   
+         $command_name = $args[1];
+   
+         if (!$command_name || !isset($commands[$command_name])) {
+            echo "OceanPHP Project developed by Rayan (".INFO."sudo38/OceanPHP".RESET.")\n";
+            echo "Usage: php ocean <command> [options]\n";
+            echo "Available commands:\n";
+
+            foreach ($commands as $command_name => $command_func) {
+               echo "  $command_name\n";
+            }
+
+            return;
+         }
+   
+         $options = parse_options($args);
+         $command_func = $commands[$command_name];
+         $command_func($options);
+      }
+   }
+
+
+   /**
+   * Define available commands and their respective functions
+   */
+   $commands = [
+      'start'           => 'start',
+      'migrate'         => 'migrate',
+      'migrate:refresh' => 'migrate_refresh',
+      'cache:clear'     => 'clear_cache',
+      'storage:link'    => 'storage_link',
+      'help'            => 'help_usage',
+      'list'            => 'list_of_commands',
+   ];
+
+   handle($argv, $commands);

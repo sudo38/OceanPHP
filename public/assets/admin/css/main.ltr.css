@@ -1,0 +1,21 @@
+@import url('https://fonts.googleapis.com/css2?family=Cairo:wght@200..1000&display=swap');
+
+h1, h2, h3, h4, h5, h6, button, label, input, div, span, a {
+   font-family: "Cairo", serif;
+ }
+
+input[type=checkbox] + label {
+   display: inline-block;
+   vertical-align: middle;
+   cursor: pointer;
+   margin-left: 4px;
+}
+
+.fa-user,
+.fa-clock {
+   margin-right: 5px;
+}
+
+.blog-post-date {
+   margin-right: 10px;
+ }
