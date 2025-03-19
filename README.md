@@ -10,7 +10,7 @@ _A library that makes it easy to work with pure PHP._
 
 <br>
 
-## ✨ Features
+## 🚀 Features
 
 ### 🧩 Project Architecture (similar MVC)
 The application is structured in a way that separates concerns: <br>
